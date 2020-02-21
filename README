@@ -1,0 +1,6 @@
+LLRcalc.py, SPRT_pentanomial.py, brentq.py, brownian.py are all from Michel Van den Bergh's [pentanomial SPRT](https://github.com/vdbergh/pentanomial),
+which is technically unlicensed, but used in good faith. I'll file an issue there asking for license clarification *at some point*.
+
+All of my own code here is released under the [Parity Public License version 7.0.0](https://paritylicense.com/versions/7.0.0.html).
+
+To run it, just run `bash run.sh`. You'll probably need to install a bunch of dependencies like Eigen3 for nextpnr, BLAS for numpy (as a dependency of matplotlib), but I'm sure you can figure out how.
