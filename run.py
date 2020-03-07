@@ -22,7 +22,7 @@ TUNABLE_NEXTPNR_BASE_OPTS = "--placer heap --router router1"
 TUNABLE_NEXTPNR_NEW_OPTS = "--placer heap --router router1"
 TUNABLE_SOURCE_PATH = "/verilog/benchmarks_large/picosoc/"
 TUNABLE_SOURCE_NAME = "picorv32_large.v"
-TUNABLE_TEMP_DIR = "/opt/media/share/"
+TUNABLE_TEMP_DIR = "/mnt/d/"
 NPROC = 4
 ALPHA = 0.0001
 BETA = 0.0001
@@ -114,6 +114,9 @@ def pnr_new_netlist(arg):
 if __name__ == "__main__":
     base_results = []
     new_results = []
+    LA = 0
+    LB = 0
+    LLR = []
 
     with tempfile.TemporaryDirectory(prefix=TUNABLE_TEMP_DIR) as tempdir:
         for dir in (tempdir + "/base", tempdir + "/new", tempdir + "/base/yosys", tempdir + "/new/yosys", tempdir + "/base/nextpnr", tempdir + "/new/nextpnr"):
@@ -156,6 +159,8 @@ if __name__ == "__main__":
 
         s = SPRT(alpha=ALPHA, beta=BETA, elo0=ELO0, elo1=ELO1, mode="trinomial")
 
+        LA, LB = s.LA, s.LB
+
         N = 0
 
         while s.status() == '':
@@ -183,6 +188,8 @@ if __name__ == "__main__":
 
                 print("{},{},{},{}".format(s.LLR(), s.LA, s.LB, "W" if nr[i] > br[i] else "D" if nr[i] == br[i] else "L"))
 
+                LLR.append(s.LLR())
+
                 if s.status() != '':
                     break
 
@@ -191,12 +198,19 @@ if __name__ == "__main__":
 
         print("{} was accepted".format(s.status()))
 
-    fig, axes = plt.subplots(1, 1)
+    fig, axes = plt.subplots(2, 1)
+    top, bot = axes.flatten()
 
-    plt.hist([base_results, new_results], density=True, stacked=True, label=[
+    # Top: histogram of Fmax results, with two lines representing average Fmax.
+    top.hist([base_results, new_results], density=True, stacked=True, label=[
         ' '.join(["Base: Yosys",TUNABLE_YOSYS_BASE_BRANCH,TUNABLE_YOSYS_BASE_OPTS,"; nextpnr",TUNABLE_NEXTPNR_BASE_BRANCH,TUNABLE_NEXTPNR_NEW_OPTS]),
         ' '.join(["New: Yosys",TUNABLE_YOSYS_NEW_BRANCH,TUNABLE_YOSYS_NEW_OPTS,"; nextpnr",TUNABLE_NEXTPNR_NEW_BRANCH,TUNABLE_NEXTPNR_NEW_OPTS])
-    ])
-    plt.legend()
+    ], color=["blue", "yellow"])
+    top.vlines([sum(base_results) / len(base_results), sum(new_results) / len(new_results)], 0, 1, color=["blue", "yellow"])
+    top.legend()
+
+    # Bottom: SPRT over time.
+    bot.hlines([LA, LB], 0, len(base_results), label=["Fail threshold", "Pass threshold"], color=["red", "green"])
+    bot.plot(LLR, "b-", label="Log-likelihood ratio")
 
     plt.savefig("output.png", bbox_inches="tight")
